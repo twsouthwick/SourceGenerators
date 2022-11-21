@@ -60,7 +60,10 @@ internal static class GeneratorExtensions
                        }
                        else if (SymbolEqualityComparer.Default.Equals(registerAttribute, attribute.AttributeClass))
                        {
-                           builder.Add(AddRegistration(attribute));
+                           if (AddRegistration(attribute) is { } registration)
+                           {
+                               builder.Add(registration);
+                           }
                        }
                        else if (SymbolEqualityComparer.Default.Equals(registerFactoryAttribute, attribute.AttributeClass))
                        {
@@ -81,9 +84,41 @@ internal static class GeneratorExtensions
         //    });
     }
 
-    private static Item AddRegistration(AttributeData data)
+    private static Item? AddRegistration(AttributeData data)
     {
-        return new Item { };
+        if (data.ConstructorArguments is [{ Kind: TypedConstantKind.Type, Value: INamedTypeSymbol service }, { Kind: TypedConstantKind.Type, Value: INamedTypeSymbol impl }])
+        {
+            var implStr = impl.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+            var serviceStr = service.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+
+            return new Item()
+            {
+                Name = new(implStr),
+                Type = new(serviceStr),
+                Args = GetArgs(impl),
+            };
+        }
+        else if (data.ConstructorArguments is [{ Kind: TypedConstantKind.Type, Value: INamedTypeSymbol type }])
+        {
+            var str = type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+            return new Item()
+            {
+                Name = new(str),
+                Type = new(str),
+                Args = GetArgs(type),
+            };
+        }
+
+        return null;
+    }
+
+    private static ImmutableArray<TypeReference> GetArgs(INamedTypeSymbol type)
+    {
+        var constructor = type.Constructors.OrderBy(c => c.Parameters.Length).FirstOrDefault();
+
+        return constructor.Parameters
+            .Select(t => new TypeReference(t.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)))
+            .ToImmutableArray();
     }
 
     private static Item AddFactoryRegistration(AttributeData data)
