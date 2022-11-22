@@ -174,7 +174,7 @@ internal static class ContainerRegistrationExtensions
         var stack = ImmutableStack.Create<Visible<TypeReference>>();
         var type = method.ContainingType;
         var ns = type.ContainingNamespace.ToString();
-        var typeParam = method.TypeArguments[0].Name;
+        var typeParam = method.TypeArguments.Length == 1 ? method.TypeArguments[0].Name : string.Empty;
 
         while (type is not null)
         {
@@ -186,6 +186,15 @@ internal static class ContainerRegistrationExtensions
         var location = method.Locations.FirstOrDefault(static m => m.IsInSource);
 
         if (method.Parameters.Length != 0)
+        {
+            errors.Add(new Error(KnownErrors.InvalidGenericGetMethod, location));
+        }
+
+        if (method.TypeArguments.Length != 1)
+        {
+            errors.Add(new Error(KnownErrors.InvalidGenericGetMethod, location));
+        }
+        else if (!SymbolEqualityComparer.Default.Equals(method.ReturnType, method.TypeArguments[0]))
         {
             errors.Add(new Error(KnownErrors.InvalidGenericGetMethod, location));
         }
