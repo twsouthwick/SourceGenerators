@@ -9,7 +9,7 @@ using System.Collections.Immutable;
 
 namespace Swick.DependencyInjection.Generator;
 
-internal static class GeneratorExtensions
+internal static class ContainerRegistrationExtensions
 {
     public static IncrementalValuesProvider<ContainerRegistration> GetContainerRegistrations(this IncrementalGeneratorInitializationContext context)
     {
@@ -52,6 +52,8 @@ internal static class GeneratorExtensions
                    var details = BuildDetails(method);
                    var result = new ContainerRegistration(details);
                    var builder = ImmutableArray.CreateBuilder<Registration>();
+                   var errors = ImmutableArray.CreateBuilder<Error>();
+                   var registeredService = new HashSet<string>();
 
                    foreach (var attribute in method.GetAttributes())
                    {
@@ -63,7 +65,15 @@ internal static class GeneratorExtensions
                        {
                            if (AddRegistration(attribute) is { } registration)
                            {
-                               builder.Add(registration);
+                               if (registeredService.Add(registration.ServiceType.FullName))
+                               {
+                                   builder.Add(registration);
+                               }
+                               else
+                               {
+                                   var location = attribute.ApplicationSyntaxReference?.GetSyntax(token)?.GetLocation();
+                                   errors.Add(new Error(KnownErrors.DuplicateService, location, registration.ServiceType.FullName, registration.ImplementationType.FullName));
+                               }
                            }
                        }
                        else if (SymbolEqualityComparer.Default.Equals(registerFactoryAttribute, attribute.AttributeClass))
@@ -75,7 +85,11 @@ internal static class GeneratorExtensions
                        }
                    }
 
-                   return result with { Registrations = builder.ToImmutable() };
+                   return result with
+                   {
+                       Registrations = builder.ToImmutable(),
+                       Errors = errors.ToImmutable(),
+                   };
                })
            .Where(t => t is { Registrations: { } items } && !items.IsDefaultOrEmpty)!;
     }

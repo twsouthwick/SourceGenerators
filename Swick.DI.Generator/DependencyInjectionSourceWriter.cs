@@ -56,16 +56,19 @@ internal static class DependencyInjectionSourceWriterMethods
 
     private static void WriteInjectedCode(IndentedTextWriter indented, ContainerRegistration registration)
     {
-        foreach (var item in registration.Registrations)
+        if (registration.Errors.IsEmpty)
         {
-            indented.Write("private ");
-            indented.Write(item.ServiceType);
-            indented.Write("? ");
-            indented.Write(item.VariableName);
-            indented.WriteLine(";");
-        }
+            foreach (var item in registration.Registrations)
+            {
+                indented.Write("private ");
+                indented.Write(item.ServiceType);
+                indented.Write("? ");
+                indented.Write(item.VariableName);
+                indented.WriteLine(";");
+            }
 
-        indented.WriteLineNoTabs();
+            indented.WriteLineNoTabs();
+        }
 
         indented.Write(GetAccessibility(registration.Details.Method.Visibility));
         indented.Write(" partial T? ");
@@ -74,6 +77,12 @@ internal static class DependencyInjectionSourceWriterMethods
 
         using (indented.AddBlock())
         {
+            if (!registration.Errors.IsEmpty)
+            {
+                indented.WriteLine("return default;");
+                return;
+            }
+
             foreach (var item in registration.Registrations)
             {
                 indented.Write("if (typeof(T) == typeof(");

@@ -2,20 +2,16 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System.CodeDom.Compiler;
-using System.Collections.Immutable;
 
 namespace Swick.DependencyInjection.Generator;
 
 [Generator]
 public class DependencyInjectionGenerator : IIncrementalGenerator
 {
-    private static readonly DiagnosticDescriptor DuplicateAttribute = new("OOX1000", "Duplicate known features", "Service {0} is already registered for {1}", "KnownFeatures", DiagnosticSeverity.Error, isEnabledByDefault: true);
-    private static readonly DiagnosticDescriptor SingleContractForFeature = new("OOX1001", "Duplicate contracts registered", "Can only register a single contract for {0}", "KnownFeatures", DiagnosticSeverity.Error, isEnabledByDefault: true);
-    private static readonly DiagnosticDescriptor InvalidFactoryMethod = new("OOX1002", "Invalid factory method", "Method {0} must have no parameters and return {1} type", "KnownFeatures", DiagnosticSeverity.Error, isEnabledByDefault: true);
-    private static readonly DiagnosticDescriptor InvalidDelegatedFeatures = new("OOX1003", "Invalid delegated features", "Member {0} must have no parameters if a method and return IFeatureCollection", "KnownFeatures", DiagnosticSeverity.Error, isEnabledByDefault: true);
+    private static readonly DiagnosticDescriptor DuplicateAttribute = new(KnownErrors.DuplicateService, "Duplicate known registration", "Service {0} is already registered for {1}", "DependencyInjection", DiagnosticSeverity.Error, isEnabledByDefault: true);
+    private static readonly DiagnosticDescriptor SingleContractForFeature = new("OOX1001", "Duplicate contracts registered", "Can only register a single contract for {0}", "DependencyInjection", DiagnosticSeverity.Error, isEnabledByDefault: true);
+    private static readonly DiagnosticDescriptor InvalidFactoryMethod = new(KnownErrors.InvalidFactory, "Invalid factory method", "Method {0} must have no parameters and return {1} type", "DependencyInjection", DiagnosticSeverity.Error, isEnabledByDefault: true);
 
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
@@ -28,6 +24,18 @@ public class DependencyInjectionGenerator : IIncrementalGenerator
             var source = registrations.Build();
 
             context.AddSource(fileName, source);
+
+            foreach (var error in registrations.Errors)
+            {
+                var descriptor = error.Id switch
+                {
+                    KnownErrors.InvalidFactory => InvalidFactoryMethod,
+                    KnownErrors.DuplicateService => DuplicateAttribute,
+                    _ => throw new NotImplementedException(),
+                };
+
+                context.ReportDiagnostic(Diagnostic.Create(descriptor, error.Location, messageArgs: error.MessageArgs));
+            }
         });
 
         context.RegisterPostInitializationOutput(context =>
