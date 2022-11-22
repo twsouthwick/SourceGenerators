@@ -86,7 +86,7 @@ internal static class DependencyInjectionSourceWriterMethods
                     indented.WriteLineNoTabs();
                     indented.Write("return (T)");
 
-                    if (item.ImplementationType.TypeKind != TypeKind.Interface)
+                    if (item.ServiceType.TypeKind != TypeKind.Interface)
                     {
                         indented.Write("(object)");
                     }
