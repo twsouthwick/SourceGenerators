@@ -4,7 +4,7 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using System;
+using Swick.DependencyInjection.Generator.Models;
 using System.Collections.Immutable;
 
 namespace Swick.DependencyInjection.Generator;
@@ -75,14 +75,6 @@ internal static class GeneratorExtensions
                    return result with { Items = builder.ToImmutable() };
                })
            .Where(t => t is { Items: { } items } && !items.IsDefaultOrEmpty)!;
-
-        //var types = context.CompilationProvider
-        //    .Select((compilation, token) => new KnownTypes
-        //    {
-        //        KnownFeature = compilation.GetTypeByMetadataName("Swick.DependencyInjection.RegisterAttribute"),
-        //        ThreadSafe = compilation.GetTypeByMetadataName("Swick.DependencyInjection.ContainerOptionsAttribute"),
-        //        Delegated = compilation.GetTypeByMetadataName("Swick.DependencyInjection.RegisterFactoryAttribute"),
-        //    });
     }
 
     private static Item? AddRegistration(AttributeData data)

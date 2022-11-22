@@ -4,7 +4,7 @@
 using Microsoft.CodeAnalysis;
 using System.Collections.Immutable;
 
-namespace Swick.DependencyInjection.Generator;
+namespace Swick.DependencyInjection.Generator.Models;
 
 internal record Visible<T>(T Item, Accessibility Visibility);
 

@@ -2,115 +2,104 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using Microsoft.CodeAnalysis;
+using Swick.DependencyInjection.Generator.Models;
 using System.CodeDom.Compiler;
+using System.Collections.Immutable;
 
 namespace Swick.DependencyInjection.Generator;
 
-public static class DependencyInjectionSourceWriter
+internal static class DependencyInjectionSourceWriterMethods
 {
-    public static string Build(this IMethodSymbol method, IEnumerable<ISymbol> delegatedMethods, IEnumerable<(INamedTypeSymbol Contract, ISymbol Service)> features, bool isThreadSafe)
+    public static string Build(this ContainerRegistration registration)
     {
         var sb = new StringWriter();
         var indented = new IndentedTextWriter(sb);
 
         indented.WriteFileHeader();
 
-        if (isThreadSafe)
+        if (registration.Options.IsThreadSafe)
         {
             indented.WriteLine("using System.Threading;");
             indented.WriteLineNoTabs();
         }
 
         indented.Write("namespace ");
-        indented.Write(method.ContainingType.ContainingNamespace.ToString());
+        indented.Write(registration.Details.Namespace);
         indented.WriteLine(";");
 
         indented.WriteLine();
 
-        WriteContainingClass(indented, GetNestedClasses(method.ContainingType), method, delegatedMethods, features, isThreadSafe);
+        WriteContainingClass(indented, registration, registration.Details.TypeNames);
 
         return sb.ToString();
     }
 
-    private static Stack<INamedTypeSymbol> GetNestedClasses(INamedTypeSymbol type)
+    private static void WriteContainingClass(IndentedTextWriter indented, ContainerRegistration registration, ImmutableStack<Visible<TypeReference>> types)
     {
-        var stack = new Stack<INamedTypeSymbol>();
-
-        while (type is not null)
+        if (types.IsEmpty)
         {
-            stack.Push(type);
-            type = type.ContainingType;
-        }
-
-        return stack;
-    }
-
-    private static void WriteContainingClass(IndentedTextWriter indented, Stack<INamedTypeSymbol> types, IMethodSymbol method, IEnumerable<ISymbol> delegatedMethods, IEnumerable<(INamedTypeSymbol Contract, ISymbol Service)> features, bool isThreadSafe)
-    {
-        if (types.Count == 0)
-        {
-            WriteInjectedCode(indented, method, delegatedMethods, features, isThreadSafe);
+            WriteInjectedCode(indented, registration);
         }
         else
         {
-            var type = types.Pop();
-            indented.Write(GetAccessibility(type));
+            types = types.Pop(out var type);
+            indented.Write(GetAccessibility(type.Visibility));
             indented.Write(" partial class ");
-            indented.WriteLine(type.Name);
+            indented.WriteLine(type.Item.Name);
 
             using (indented.AddBlock())
             {
-                WriteContainingClass(indented, types, method, delegatedMethods, features, isThreadSafe);
+                WriteContainingClass(indented, registration, types);
             }
         }
     }
 
-    private static void WriteInjectedCode(IndentedTextWriter indented, IMethodSymbol method, IEnumerable<ISymbol> delegatedMethods, IEnumerable<(INamedTypeSymbol Contract, ISymbol Service)> features, bool isThreadSafe)
+    private static void WriteInjectedCode(IndentedTextWriter indented, ContainerRegistration registration)
     {
-        foreach (var (contract, service) in features)
+        foreach (var item in registration.Items)
         {
             indented.Write("private ");
-            indented.WriteSymbol(contract);
-            indented.Write("? _");
-            indented.Write(service.Name);
+            indented.Write(item.ServiceType);
+            indented.Write("? ");
+            indented.Write(item.VariableName);
             indented.WriteLine(";");
         }
 
         indented.WriteLineNoTabs();
 
-        indented.Write(GetAccessibility(method));
+        indented.Write(GetAccessibility(registration.Details.Method.Visibility));
         indented.Write(" partial T? ");
-        indented.Write(method.Name);
+        indented.Write(registration.Details.Method.Item.Name);
         indented.WriteLine("<T>()");
 
         using (indented.AddBlock())
         {
-            foreach (var (contract, service) in features)
+            foreach (var item in registration.Items)
             {
                 indented.Write("if (typeof(T) == typeof(");
-                indented.WriteSymbol(contract);
+                indented.Write(item.ServiceType);
                 indented.WriteLine("))");
 
                 using (indented.AddBlock())
                 {
-                    WriteFeatureCreation(indented, service, isThreadSafe);
+                    WriteCreateIfNull(indented, item.VariableName, item.ImplementationType, registration.Options.IsThreadSafe);
 
                     indented.WriteLineNoTabs();
                     indented.Write("return (T)");
 
-                    if (contract.TypeKind != TypeKind.Interface)
+                    if (item.ServiceType.TypeKind != TypeKind.Interface)
                     {
                         indented.Write("(object)");
                     }
 
-                    indented.Write("_");
-                    indented.Write(service.Name);
+                    indented.Write(item.VariableName);
                     indented.WriteLine(";");
                 }
 
                 indented.WriteLineNoTabs();
             }
 
+#if FALSE
             var count = 1;
             foreach (var delegated in delegatedMethods)
             {
@@ -148,52 +137,43 @@ public static class DependencyInjectionSourceWriter
 
                 count++;
             }
+#endif
 
             indented.WriteLine("return default;");
         }
     }
 
-    private static void WriteFeatureCreation(IndentedTextWriter indented, ISymbol service, bool isThreadSafe)
+    private static void WriteCreateIfNull(IndentedTextWriter indented, string variableName, TypeReference type, bool isThreadSafe)
     {
         indented.Write("if (");
-        indented.Write("_");
-        indented.Write(service.Name);
+        indented.Write(variableName);
         indented.WriteLine(" is null)");
 
         using (indented.AddBlock())
         {
             if (isThreadSafe)
             {
-                indented.Write("Interlocked.CompareExchange(ref _");
-                indented.Write(service.Name);
+                indented.Write("Interlocked.CompareExchange(ref ");
+                indented.Write(variableName);
                 indented.Write(", ");
-                indented.CreateInstance(service);
+                indented.CreateInstance(type);
                 indented.WriteLine(", null);");
             }
             else
             {
-                indented.Write("_");
-                indented.Write(service.Name);
+                indented.Write(variableName);
                 indented.Write(" = ");
-                indented.CreateInstance(service);
+                indented.CreateInstance(type);
                 indented.WriteLine(";");
             }
         }
     }
 
-    private static void CreateInstance(this TextWriter writer, ISymbol symbol)
+    private static void CreateInstance(this TextWriter writer, TypeReference type)
     {
-        if (symbol is IMethodSymbol method)
-        {
-            writer.Write(method.Name);
-            writer.Write("()");
-        }
-        else if (symbol is INamedTypeSymbol type)
-        {
-            writer.Write("new ");
-            writer.WriteSymbol(type);
-            writer.Write("()");
-        }
+        writer.Write("new ");
+        writer.Write(type.FullName);
+        writer.Write("()");
     }
 
     private static void WriteSymbol(this TextWriter writer, ISymbol symbol)
@@ -201,7 +181,7 @@ public static class DependencyInjectionSourceWriter
         writer.Write(symbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat));
     }
 
-    private static string GetAccessibility(ISymbol symbol) => symbol.DeclaredAccessibility switch
+    private static string GetAccessibility(Accessibility accessibility) => accessibility switch
     {
         Accessibility.Private => "private",
         Accessibility.ProtectedAndInternal => "private protected",

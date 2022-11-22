@@ -4,7 +4,7 @@
 using Microsoft.CodeAnalysis;
 using System.Collections.Immutable;
 
-namespace Swick.DependencyInjection.Generator;
+namespace Swick.DependencyInjection.Generator.Models;
 
 internal record struct MethodReference(string Name);
 
@@ -21,7 +21,7 @@ internal record struct TypeReference(string FullName, ImmutableArray<TypeName> P
             var name = FullName;
             var idx = name.LastIndexOfAny(_delimiters);
 
-            return idx < 0 ? FullName : FullName.Substring(idx + 1); 
+            return idx < 0 ? FullName : FullName.Substring(idx + 1);
         }
     }
 

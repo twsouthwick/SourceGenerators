@@ -3,7 +3,7 @@
 
 using System.Collections.Immutable;
 
-namespace Swick.DependencyInjection.Generator;
+namespace Swick.DependencyInjection.Generator.Models;
 
 internal record Item
 {

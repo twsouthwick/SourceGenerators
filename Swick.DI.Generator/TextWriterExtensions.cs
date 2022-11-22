@@ -24,4 +24,55 @@ public static class TextWriterExtensions
 
         return new(writer, options is null ? new() { FinalText = finalText } : options with { FinalText = finalText });
     }
+
+    public readonly struct Indentation : IDisposable
+    {
+        private static readonly BlockOptions _defaultOptions = new();
+
+        private readonly IndentedTextWriter _writer;
+        private readonly BlockOptions _options;
+
+        public Indentation(IndentedTextWriter writer, BlockOptions? options = null)
+        {
+            _writer = writer;
+            _writer.Indent++;
+            _options = options ?? _defaultOptions;
+        }
+
+        public void Dispose()
+        {
+            _writer.Indent--;
+
+            if (_options.AddNewLineBeforeClosing)
+            {
+                _writer.WriteLine();
+            }
+
+            if (_options.FinalText is not null)
+            {
+                _writer.Write(_options.FinalText);
+
+                if (_options.IncludeSemiColon)
+                {
+                    _writer.Write(";");
+                }
+            }
+
+            if (_options.IncludeTrailingNewline)
+            {
+                _writer.WriteLine();
+            }
+        }
+    }
+
+    public record BlockOptions
+    {
+        public bool IncludeSemiColon { get; init; }
+
+        public string? FinalText { get; init; }
+
+        public bool AddNewLineBeforeClosing { get; internal set; }
+
+        public bool IncludeTrailingNewline { get; init; } = true;
+    }
 }
