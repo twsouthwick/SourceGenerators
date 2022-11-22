@@ -80,7 +80,15 @@ internal static class ContainerRegistrationExtensions
                        {
                            if (AddFactoryRegistration(method.ContainingType, attribute) is { } registration)
                            {
-                               builder.Add(registration);
+                               if (registeredService.Add(registration.ServiceType.FullName))
+                               {
+                                   builder.Add(registration);
+                               }
+                           }
+                           else
+                           {
+                               var location = attribute.ApplicationSyntaxReference?.GetSyntax(token)?.GetLocation();
+                               errors.Add(new Error(KnownErrors.InvalidFactory, location)); 
                            }
                        }
                    }
@@ -91,7 +99,7 @@ internal static class ContainerRegistrationExtensions
                        Errors = errors.ToImmutable(),
                    };
                })
-           .Where(t => t is { Registrations: { } items } && !items.IsDefaultOrEmpty)!;
+           .Where(t => t is not null)!;
     }
 
     private static TypeRegistration? AddRegistration(AttributeData data)
@@ -135,10 +143,11 @@ internal static class ContainerRegistrationExtensions
         return new TypeReference(type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat), parameters, type.TypeKind);
     }
 
-    private static Registration? AddFactoryRegistration(INamedTypeSymbol containingType, AttributeData data)
+    private static FactoryRegistration? AddFactoryRegistration(INamedTypeSymbol containingType, AttributeData data)
     {
         if (data.ConstructorArguments is [{ Kind: TypedConstantKind.Type, Value: INamedTypeSymbol service }, { Value: string name }] &&
-            containingType.GetMembers(name).OfType<IMethodSymbol>().FirstOrDefault(f => f.Parameters.Length == 0) is { } method)
+            containingType.GetMembers(name).OfType<IMethodSymbol>().FirstOrDefault(f => f.Parameters.Length == 0) is { } method &&
+            SymbolEqualityComparer.Default.Equals(method.ReturnType, service))
         {
             var reference = CreateTypeReference(service);
             return new FactoryRegistration(reference, MethodReference.Create(method));

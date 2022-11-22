@@ -56,7 +56,7 @@ internal static class DependencyInjectionSourceWriterMethods
 
     private static void WriteInjectedCode(IndentedTextWriter indented, ContainerRegistration registration)
     {
-        if (registration.Errors.IsEmpty)
+        if (registration.Errors.IsEmpty && !registration.Registrations.IsDefaultOrEmpty)
         {
             foreach (var item in registration.Registrations)
             {
