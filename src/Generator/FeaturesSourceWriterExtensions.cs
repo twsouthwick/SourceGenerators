@@ -71,9 +71,13 @@ internal static class FeaturesSourceWriterExtensions
         }
 
         indented.Write(GetAccessibility(registration.Details.Method.Visibility));
-        indented.Write(" partial T? ");
+        indented.Write(" partial ");
+        indented.Write(registration.Details.TypeParamName);
+        indented.Write("? ");
         indented.Write(registration.Details.Method.Item.Name);
-        indented.WriteLine("<T>()");
+        indented.Write("<");
+        indented.Write(registration.Details.TypeParamName);
+        indented.WriteLine(">()");
 
         using (indented.AddBlock())
         {
@@ -85,7 +89,9 @@ internal static class FeaturesSourceWriterExtensions
 
             foreach (var item in registration.Registrations)
             {
-                indented.Write("if (typeof(T) == typeof(");
+                indented.Write("if (typeof(");
+                indented.Write(registration.Details.TypeParamName);
+                indented.Write(") == typeof(");
                 indented.Write(item.ServiceType);
                 indented.WriteLine("))");
 
@@ -94,7 +100,9 @@ internal static class FeaturesSourceWriterExtensions
                     WriteCreateIfNull(indented, item, registration.Options.IsThreadSafe);
 
                     indented.WriteLineNoTabs();
-                    indented.Write("return (T)");
+                    indented.Write("return (");
+                    indented.Write(registration.Details.TypeParamName);
+                    indented.Write(")");
 
                     if (item.ServiceType.TypeKind != TypeKind.Interface)
                     {

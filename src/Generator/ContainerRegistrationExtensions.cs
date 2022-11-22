@@ -174,6 +174,7 @@ internal static class ContainerRegistrationExtensions
         var stack = ImmutableStack.Create<Visible<TypeReference>>();
         var type = method.ContainingType;
         var ns = type.ContainingNamespace.ToString();
+        var typeParam = method.TypeArguments[0].Name;
 
         while (type is not null)
         {
@@ -181,6 +182,6 @@ internal static class ContainerRegistrationExtensions
             type = type.ContainingType;
         }
 
-        return new ContainerDetails(ns, stack, new(new(method.Name), method.DeclaredAccessibility));
+        return new ContainerDetails(ns, stack, new(new(method.Name), method.DeclaredAccessibility), typeParam);
     }
 }
