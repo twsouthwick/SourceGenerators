@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
+    <AssemblyName>Swick.DependencyInjection.Generator</AssemblyName>
     <ImplicitUsings>enable</ImplicitUsings>
     <LangVersion>11</LangVersion>
     <Nullable>enable</Nullable>

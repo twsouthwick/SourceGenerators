@@ -10,7 +10,6 @@ namespace Swick.DependencyInjection.Generator;
 public class DependencyInjectionGenerator : IIncrementalGenerator
 {
     private static readonly DiagnosticDescriptor DuplicateAttribute = new(KnownErrors.DuplicateService, "Duplicate known registration", "Service {0} is already registered for {1}", "DependencyInjection", DiagnosticSeverity.Error, isEnabledByDefault: true);
-    private static readonly DiagnosticDescriptor SingleContractForFeature = new("OOX1001", "Duplicate contracts registered", "Can only register a single contract for {0}", "DependencyInjection", DiagnosticSeverity.Error, isEnabledByDefault: true);
     private static readonly DiagnosticDescriptor InvalidFactoryMethod = new(KnownErrors.InvalidFactory, "Invalid factory method", "Method {0} must have no parameters and return {1} type", "DependencyInjection", DiagnosticSeverity.Error, isEnabledByDefault: true);
 
     public void Initialize(IncrementalGeneratorInitializationContext context)

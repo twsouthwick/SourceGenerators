@@ -108,46 +108,6 @@ internal static class DependencyInjectionSourceWriterMethods
                 indented.WriteLineNoTabs();
             }
 
-#if FALSE
-            var count = 1;
-            foreach (var delegated in delegatedMethods)
-            {
-                indented.Write("if (");
-
-                if (!SymbolEqualityComparer.Default.Equals(delegated.ContainingType, method.ContainingType))
-                {
-                    indented.WriteSymbol(delegated.ContainingType);
-                    indented.Write(".");
-                }
-
-                indented.Write(delegated.Name);
-
-                if (delegated.Kind == SymbolKind.Method)
-                {
-                    indented.Write("()");
-                }
-
-                indented.Write(" is global::DocumentFormat.OpenXml.Features.IFeatureCollection other");
-                indented.Write(count);
-                indented.Write(" && other");
-                indented.Write(count);
-                indented.Write(".Get<T>() is T result");
-                indented.Write(count);
-                indented.WriteLine(")");
-
-                using (indented.AddBlock())
-                {
-                    indented.Write("return result");
-                    indented.Write(count);
-                    indented.WriteLine(";");
-                }
-
-                indented.WriteLineNoTabs();
-
-                count++;
-            }
-#endif
-
             indented.WriteLine("return default;");
         }
     }
