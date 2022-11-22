@@ -52,7 +52,7 @@ internal static class ContainerRegistrationExtensions
                    var details = BuildDetails(method);
                    var result = new ContainerRegistration(details);
                    var builder = ImmutableArray.CreateBuilder<Registration>();
-                   var errors = ImmutableArray.CreateBuilder<Error>();
+                   var errors = result.Errors.ToBuilder();
                    var registeredService = new HashSet<string>();
 
                    foreach (var attribute in method.GetAttributes())
@@ -182,6 +182,17 @@ internal static class ContainerRegistrationExtensions
             type = type.ContainingType;
         }
 
-        return new ContainerDetails(ns, stack, new(new(method.Name), method.DeclaredAccessibility), typeParam);
+        var errors = ImmutableArray.CreateBuilder<Error>();
+        var location = method.Locations.FirstOrDefault(static m => m.IsInSource);
+
+        if (method.Parameters.Length != 0)
+        {
+            errors.Add(new Error(KnownErrors.InvalidGenericGetMethod, location));
+        }
+
+        return new ContainerDetails(ns, stack, new(new(method.Name), method.DeclaredAccessibility), typeParam)
+        {
+            Errors = errors.ToImmutable()
+        };
     }
 }

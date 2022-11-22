@@ -56,6 +56,12 @@ internal static class FeaturesSourceWriterExtensions
 
     private static void WriteInjectedCode(IndentedTextWriter indented, ContainerRegistration registration)
     {
+        if (!registration.Details.Errors.IsDefaultOrEmpty)
+        {
+            indented.WriteLine("// Invalid get method");
+            return;
+        }
+
         if (registration.Errors.IsEmpty && !registration.Registrations.IsDefaultOrEmpty)
         {
             foreach (var item in registration.Registrations)

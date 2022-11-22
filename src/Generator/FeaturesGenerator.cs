@@ -11,6 +11,7 @@ public class FeaturesGenerator : IIncrementalGenerator
 {
     private static readonly DiagnosticDescriptor DuplicateAttribute = new(KnownErrors.DuplicateService, "Duplicate known registration", "Service {0} is already registered for {1}", "Features", DiagnosticSeverity.Error, isEnabledByDefault: true);
     private static readonly DiagnosticDescriptor InvalidFactoryMethod = new(KnownErrors.InvalidFactory, "Invalid factory method", "Method must have no parameters and return service type", "Features", DiagnosticSeverity.Error, isEnabledByDefault: true);
+    private static readonly DiagnosticDescriptor InvalidGetMethod = new(KnownErrors.InvalidGenericGetMethod, "Invalid feature get method", "Get method must have no parameters, a single generic parameter as its return type.", "Features", DiagnosticSeverity.Error, isEnabledByDefault: true);
 
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
@@ -30,6 +31,7 @@ public class FeaturesGenerator : IIncrementalGenerator
                 {
                     KnownErrors.InvalidFactory => InvalidFactoryMethod,
                     KnownErrors.DuplicateService => DuplicateAttribute,
+                    KnownErrors.InvalidGenericGetMethod=> InvalidGetMethod,
                     _ => throw new NotImplementedException(),
                 };
 

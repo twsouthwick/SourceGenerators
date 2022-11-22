@@ -6,8 +6,16 @@ using System.Collections.Immutable;
 
 namespace Swick.Features.Generator.Models;
 
-internal record ContainerRegistration(ContainerDetails Details)
+internal record ContainerRegistration
 {
+    public ContainerRegistration(ContainerDetails details)
+    {
+        Details = details;
+        Errors = details.Errors;
+    }
+
+    public ContainerDetails Details { get; init; }
+
     public ContainerOptions Options { get; init; } = new();
 
     public ImmutableArray<Registration> Registrations { get; init; }

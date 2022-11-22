@@ -7,4 +7,6 @@ namespace Swick.Features.Generator.Models;
 
 internal record ContainerDetails(string Namespace, ImmutableStack<Visible<TypeReference>> TypeNames, Visible<MethodReference> Method, string TypeParamName)
 {
+    public ImmutableArray<Error> Errors { get; init; }
 }
+
