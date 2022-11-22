@@ -25,7 +25,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Swick.DI.Generator\Swick.DI.Generator.csproj" />
+    <ProjectReference Include="..\Swick.DI.Generator\Generator.csproj" />
   </ItemGroup>
 
 </Project>
