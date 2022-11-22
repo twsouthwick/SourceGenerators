@@ -56,7 +56,7 @@ internal static class DependencyInjectionSourceWriterMethods
 
     private static void WriteInjectedCode(IndentedTextWriter indented, ContainerRegistration registration)
     {
-        foreach (var item in registration.Items)
+        foreach (var item in registration.Registrations)
         {
             indented.Write("private ");
             indented.Write(item.ServiceType);
@@ -74,7 +74,7 @@ internal static class DependencyInjectionSourceWriterMethods
 
         using (indented.AddBlock())
         {
-            foreach (var item in registration.Items)
+            foreach (var item in registration.Registrations)
             {
                 indented.Write("if (typeof(T) == typeof(");
                 indented.Write(item.ServiceType);
@@ -82,7 +82,7 @@ internal static class DependencyInjectionSourceWriterMethods
 
                 using (indented.AddBlock())
                 {
-                    WriteCreateIfNull(indented, item.VariableName, item.ImplementationType, registration.Options.IsThreadSafe);
+                    WriteCreateIfNull(indented, item, registration.Options.IsThreadSafe);
 
                     indented.WriteLineNoTabs();
                     indented.Write("return (T)");
@@ -143,8 +143,9 @@ internal static class DependencyInjectionSourceWriterMethods
         }
     }
 
-    private static void WriteCreateIfNull(IndentedTextWriter indented, string variableName, TypeReference type, bool isThreadSafe)
+    private static void WriteCreateIfNull(IndentedTextWriter indented, Registration registration, bool isThreadSafe)
     {
+        var variableName = registration.VariableName;
         indented.Write("if (");
         indented.Write(variableName);
         indented.WriteLine(" is null)");
@@ -156,24 +157,36 @@ internal static class DependencyInjectionSourceWriterMethods
                 indented.Write("Interlocked.CompareExchange(ref ");
                 indented.Write(variableName);
                 indented.Write(", ");
-                indented.CreateInstance(type);
+                indented.CreateInstance(registration);
                 indented.WriteLine(", null);");
             }
             else
             {
                 indented.Write(variableName);
                 indented.Write(" = ");
-                indented.CreateInstance(type);
+                indented.CreateInstance(registration);
                 indented.WriteLine(";");
             }
         }
     }
 
-    private static void CreateInstance(this TextWriter writer, TypeReference type)
+    private static void CreateInstance(this TextWriter writer, Registration registration)
     {
-        writer.Write("new ");
-        writer.Write(type.FullName);
-        writer.Write("()");
+        if (registration is FactoryRegistration factory)
+        {
+            writer.Write(factory.Method.Name);
+            writer.Write("()");
+        }
+        else if (registration is TypeRegistration type)
+        {
+            writer.Write("new ");
+            writer.Write(type.ImplementationType.FullName);
+            writer.Write("()");
+        }
+        else
+        {
+            writer.Write("null");
+        }
     }
 
     private static void WriteSymbol(this TextWriter writer, ISymbol symbol)

@@ -5,9 +5,6 @@ using System.Collections.Immutable;
 
 namespace Swick.DependencyInjection.Generator.Models;
 
-internal record ContainerRegistration(ContainerDetails Details)
+internal record ContainerDetails(string Namespace, ImmutableStack<Visible<TypeReference>> TypeNames, Visible<MethodReference> Method)
 {
-    public ContainerOptions Options { get; init; } = new();
-
-    public ImmutableArray<Registration> Registrations { get; init; }
 }

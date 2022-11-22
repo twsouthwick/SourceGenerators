@@ -6,10 +6,6 @@ using System.Collections.Immutable;
 
 namespace Swick.DependencyInjection.Generator.Models;
 
-internal record struct MethodReference(string Name);
-
-internal record struct TypeName(string FullName);
-
 internal record struct TypeReference(string FullName, ImmutableArray<TypeName> Parameters, TypeKind TypeKind)
 {
     private static readonly char[] _delimiters = new char[] { '.', ':' };

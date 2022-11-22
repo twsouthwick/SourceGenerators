@@ -55,11 +55,9 @@ public class DependencyInjectionGenerator : IIncrementalGenerator
             [global::System.AttributeUsage(global::System.AttributeTargets.Method, AllowMultiple = true)]
             internal sealed class RegisterFactoryAttribute : global::System.Attribute
             {
-                public RegisterFactoryAttribute(global::System.Type contract, global::System.Type? service = null)
+                public RegisterFactoryAttribute(global::System.Type serviceType, global::System.String methodName)
                 {
                 }
-
-                public bool IsExternal { get; set; }
             }
             
             [global::System.Diagnostics.Conditional("SWICK_DEPENDENCY_INJECTION")]
