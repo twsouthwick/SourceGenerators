@@ -55,7 +55,11 @@ public class DependencyInjectionGenerator : IIncrementalGenerator
 
         context.RegisterSourceOutput(registrations, static (context, registrations) =>
         {
+            var typeNames = string.Join(".", registrations.Details.TypeNames.Select(t => t.Item.Name));
+            var fileName = $"{registrations.Details.Namespace}.{typeNames}.{registrations.Details.Method.Item.Name}";
+            var source = registrations.Build();
 
+            context.AddSource(fileName, source);
         });
 
         context.RegisterPostInitializationOutput(context =>

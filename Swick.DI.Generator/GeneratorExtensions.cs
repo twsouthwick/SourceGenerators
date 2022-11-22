@@ -49,7 +49,8 @@ internal static class GeneratorExtensions
                        return null;
                    }
 
-                   var result = new ContainerRegistration();
+                   var details = BuildDetails(method);
+                   var result = new ContainerRegistration(details);
                    var builder = ImmutableArray.CreateBuilder<Item>();
 
                    foreach (var attribute in method.GetAttributes())
@@ -88,37 +89,44 @@ internal static class GeneratorExtensions
     {
         if (data.ConstructorArguments is [{ Kind: TypedConstantKind.Type, Value: INamedTypeSymbol service }, { Kind: TypedConstantKind.Type, Value: INamedTypeSymbol impl }])
         {
-            var implStr = impl.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-            var serviceStr = service.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-
             return new Item()
             {
-                Name = new(implStr),
-                Type = new(serviceStr),
-                Args = GetArgs(impl),
+                ImplementationType = CreateTypeReference(impl),
+                ServiceType = CreateTypeReference(service),
+            };
+        }
+        else if (data.ConstructorArguments is [{ Kind: TypedConstantKind.Type, Value: INamedTypeSymbol contract }, { Kind: TypedConstantKind.Type, Value: null }])
+        {
+            var reference = CreateTypeReference(contract);
+            return new Item()
+            {
+                ImplementationType = reference,
+                ServiceType = reference,
             };
         }
         else if (data.ConstructorArguments is [{ Kind: TypedConstantKind.Type, Value: INamedTypeSymbol type }])
         {
-            var str = type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+            var reference = CreateTypeReference(type);
             return new Item()
             {
-                Name = new(str),
-                Type = new(str),
-                Args = GetArgs(type),
+                ImplementationType = reference,
+                ServiceType = reference,
             };
         }
 
         return null;
     }
 
-    private static ImmutableArray<TypeReference> GetArgs(INamedTypeSymbol type)
+    private static TypeReference CreateTypeReference(INamedTypeSymbol type)
     {
         var constructor = type.Constructors.OrderBy(c => c.Parameters.Length).FirstOrDefault();
+        var parameters = constructor is null
+            ? ImmutableArray<TypeName>.Empty
+            : constructor.Parameters
+                         .Select(t => new TypeName(t.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)))
+                         .ToImmutableArray();
 
-        return constructor.Parameters
-            .Select(t => new TypeReference(t.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)))
-            .ToImmutableArray();
+        return new TypeReference(type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat), parameters, type.TypeKind);
     }
 
     private static Item AddFactoryRegistration(AttributeData data)
@@ -137,5 +145,20 @@ internal static class GeneratorExtensions
         }
 
         return options;
+    }
+
+    private static ContainerDetails BuildDetails(IMethodSymbol method)
+    {
+        var stack = ImmutableStack.Create<Visible<TypeReference>>();
+        var type = method.ContainingType;
+        var ns = type.ContainingNamespace.ToString();
+
+        while (type is not null)
+        {
+            stack = stack.Push(new(CreateTypeReference(type), type.DeclaredAccessibility));
+            type = type.ContainingType;
+        }
+
+        return new ContainerDetails(ns, stack, new(new(method.Name), method.DeclaredAccessibility));
     }
 }

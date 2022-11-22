@@ -7,11 +7,19 @@ namespace Swick.DependencyInjection.Generator;
 
 internal record Item
 {
-    public ImmutableArray<TypeReference> Args { get; init; }
-
     public string? Factory { get; init; }
 
-    public TypeReference Name { get; init; }
+    public TypeReference ImplementationType { get; init; }
 
-    public TypeReference Type { get; init; }
+    public string VariableName
+    {
+        get
+        {
+            var name = ImplementationType.FullName;
+            var idx = name.LastIndexOf('.');
+            return "_" + name.Substring(idx + 1);
+        }
+    }
+
+    public TypeReference ServiceType { get; init; }
 }
