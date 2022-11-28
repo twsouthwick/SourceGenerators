@@ -59,7 +59,7 @@ internal static class ContainerRegistrationExtensions
                    {
                        if (SymbolEqualityComparer.Default.Equals(optionsAttribute, attribute.AttributeClass))
                        {
-                           result = result with { Options = BuildOptions(result.Options, attribute) };
+                           result = result with { Options = BuildOptions(result.Options, attribute, errors, method) };
                        }
                        else if (SymbolEqualityComparer.Default.Equals(registerAttribute, attribute.AttributeClass))
                        {
@@ -156,7 +156,7 @@ internal static class ContainerRegistrationExtensions
         return null;
     }
 
-    private static ContainerOptions BuildOptions(ContainerOptions options, AttributeData data)
+    private static ContainerOptions BuildOptions(ContainerOptions options, AttributeData data, ImmutableArray<Error>.Builder errors, IMethodSymbol method)
     {
         foreach (var arg in data.NamedArguments)
         {
@@ -164,9 +164,43 @@ internal static class ContainerRegistrationExtensions
             {
                 options = options with { IsThreadSafe = isThreadSafe };
             }
+            else if (string.Equals("SetMethod", arg.Key, StringComparison.Ordinal) && arg.Value.Value is string setMethod)
+            {
+                if (method.ContainingType.GetMembers(setMethod) is [IMethodSymbol setMethodSymbol] &&
+                    IsReturnable(setMethodSymbol, out var isReturnable) &&
+                    setMethodSymbol.IsGenericMethod &&
+                    setMethodSymbol.TypeArguments is [{ } generic] &&
+                    setMethodSymbol.Parameters is [{ } p] &&
+                    SymbolEqualityComparer.Default.Equals(p.Type, generic))
+                {
+                    options = options with { SetMethod = new(new(setMethod, isReturnable, generic.Name), setMethodSymbol.DeclaredAccessibility) };
+                }
+                else
+                {
+                    errors.Add(new(KnownErrors.InvalidSetMethod, data.ApplicationSyntaxReference?.GetSyntax().GetLocation()));
+                }
+            }
         }
 
         return options;
+    }
+
+    private static bool IsReturnable(IMethodSymbol setMethodSymbol, out bool isReturnable)
+    {
+        if (setMethodSymbol.ReturnsVoid)
+        {
+            isReturnable = false;
+            return true;
+        }
+
+        if (setMethodSymbol.ReturnType.Name == "Boolean")
+        {
+            isReturnable = true;
+            return true;
+        }
+
+        isReturnable = true;
+        return false;
     }
 
     private static ContainerDetails BuildDetails(IMethodSymbol method)

@@ -8,4 +8,5 @@ public static class KnownErrors
     public const string DuplicateService = "DI001";
     public const string InvalidFactory = "DI002";
     public const string InvalidGenericGetMethod = "DI003";
+    public const string InvalidSetMethod = "DI004";
 }

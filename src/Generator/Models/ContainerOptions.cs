@@ -6,4 +6,10 @@ namespace Swick.Features.Generator.Models;
 internal record ContainerOptions
 {
     public bool IsThreadSafe { get; init; }
+
+    public Visible<SetMethodInfo>? SetMethod { get; init; }
+}
+
+internal record SetMethodInfo(string Name, bool IsReturnable, string GenericParam)
+{
 }

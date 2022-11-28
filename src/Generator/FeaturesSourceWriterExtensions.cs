@@ -124,6 +124,79 @@ internal static class FeaturesSourceWriterExtensions
 
             indented.WriteLine("return default;");
         }
+
+        if (registration.Options.SetMethod is { } setMethod)
+        {
+            indented.WriteLineNoTabs();
+            indented.Write(GetAccessibility(setMethod.Visibility));
+
+            indented.Write(" partial");
+
+            if (setMethod.Item.IsReturnable)
+            {
+                indented.Write(" bool ");
+            }
+            else
+            {
+                indented.Write(" void ");
+            }
+
+            indented.Write(setMethod.Item.Name);
+            indented.Write("<");
+            indented.Write(setMethod.Item.GenericParam);
+            indented.Write(">(");
+            indented.Write(setMethod.Item.GenericParam);
+            indented.WriteLine("? feature)");
+
+            var needsElse = false;
+
+            using (indented.AddBlock())
+            {
+                foreach (var item in registration.Registrations)
+                {
+                    if (needsElse)
+                    {
+                        indented.Write("else ");
+                    }
+                    needsElse = true;
+
+                    indented.Write("if (typeof(");
+                    indented.Write(setMethod.Item.GenericParam);
+                    indented.Write(") == typeof(");
+                    indented.Write(item.ServiceType);
+                    indented.WriteLine("))");
+
+                    using (indented.AddBlock())
+                    {
+                        indented.Write(item.VariableName);
+                        indented.Write(" = (");
+                        indented.Write(item.ServiceType);
+                        indented.Write("?)(object?)");
+                        indented.WriteLine("feature;");
+
+                        if (setMethod.Item.IsReturnable)
+                        {
+                            indented.WriteLine("return true;");
+                        }
+                    }
+                }
+
+                indented.WriteLine("else");
+
+                using (indented.AddBlock())
+                {
+                    if (setMethod.Item.IsReturnable)
+                    {
+                        indented.WriteLine("return false;");
+                    }
+                    else
+                    {
+                        indented.WriteLine("throw new global::System.NotSupportedException();");
+                    }
+
+                }
+            }
+        }
     }
 
     private static void WriteCreateIfNull(IndentedTextWriter indented, Registration registration, bool isThreadSafe)
