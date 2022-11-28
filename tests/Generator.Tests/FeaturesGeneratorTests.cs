@@ -254,7 +254,7 @@ public class FeaturesGeneratorTests
                 ExpectedDiagnostics =
                 {
                     DiagnosticResult.CompilerError(KnownErrors.InvalidGenericGetMethod).WithLocation(0),
-                    DiagnosticResult.CompilerError("CS8795").WithSpan(21, 23, 21, 26).WithArguments("Test.Factory.Get<T>(string)"),
+                    DiagnosticResult.CompilerError("CS8795").WithArguments("Test.Factory.Get<T>(string)").WithLocation(0),
                 },
             },
         }.RunAsync();
@@ -310,7 +310,7 @@ public class FeaturesGeneratorTests
                 ExpectedDiagnostics =
                 {
                     DiagnosticResult.CompilerError(KnownErrors.InvalidGenericGetMethod).WithLocation(0),
-                    DiagnosticResult.CompilerError("CS8795").WithSpan(17, 25, 17, 28).WithArguments("Test.Factory.Get()"),
+                    DiagnosticResult.CompilerError("CS8795").WithArguments("Test.Factory.Get()").WithLocation(0),
                 },
             },
         }.RunAsync();
@@ -367,7 +367,7 @@ public class FeaturesGeneratorTests
                 ExpectedDiagnostics =
                 {
                     DiagnosticResult.CompilerError(KnownErrors.InvalidGenericGetMethod).WithLocation(0),
-                    DiagnosticResult.CompilerError("CS8795").WithSpan(17, 25, 17, 28).WithArguments("Test.Factory.Get<T>()"),
+                    DiagnosticResult.CompilerError("CS8795").WithArguments("Test.Factory.Get<T>()").WithLocation(0),
                 },
             },
         }.RunAsync();
@@ -400,9 +400,9 @@ public class FeaturesGeneratorTests
             {
                 [Register(typeof(ITest), typeof(TestImpl))]
                 [{|#0:ContainerOptions(SetMethod = nameof(Set))|}]
-                private partial TFeature Get<TFeature>();
+                private partial TFeature? Get<TFeature>();
 
-                partial bool Set(string? feature);
+                partial bool {|#1:Set|}(string? feature);
             }
             """;
         const string Created = """
@@ -435,9 +435,7 @@ public class FeaturesGeneratorTests
                 ExpectedDiagnostics =
                 {
                     DiagnosticResult.CompilerError(KnownErrors.InvalidSetMethod).WithLocation(0),
-                    DiagnosticResult.CompilerError("CS8796").WithSpan(26, 18, 26, 21).WithArguments("Test.Factory.Set(string?)"),
-                    DiagnosticResult.CompilerError("CS8819").WithSpan(@"Swick.Features.Generator\Swick.Features.Generator.FeaturesGenerator\Test.Factory.Get.cs", 9, 31, 9, 34),
-
+                    DiagnosticResult.CompilerError("CS8796").WithLocation(1).WithArguments("Test.Factory.Set(string?)"),
                 },
             },
         }.RunAsync();
