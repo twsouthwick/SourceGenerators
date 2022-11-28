@@ -5,4 +5,9 @@
     <AssemblyVersion>$(GitVersion_AssemblySemVer)</AssemblyVersion>
     <Version>$(GitVersion_NuGetVersionV2)</Version>
   </PropertyGroup>
+
+  <PropertyGroup>
+    <SignAssembly>True</SignAssembly>
+    <AssemblyOriginatorKeyFile>$(MSBuildThisFileDirectory)generator.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
 </Project>
