@@ -168,11 +168,29 @@ internal static class FeaturesSourceWriterExtensions
 
                     using (indented.AddBlock())
                     {
-                        indented.Write(item.VariableName);
-                        indented.Write(" = (");
+                        if (registration.Options.IsThreadSafe)
+                        {
+                            indented.Write("Interlocked.Exchange(ref ");
+                            indented.Write(item.VariableName);
+                            indented.Write(", (");
+                        }
+                        else
+                        {
+                            indented.Write(item.VariableName);
+                            indented.Write(" = (");
+                        }
                         indented.Write(item.ServiceType);
                         indented.Write("?)(object?)");
-                        indented.WriteLine("feature;");
+                        indented.Write("feature");
+
+                        if (registration.Options.IsThreadSafe)
+                        {
+                            indented.WriteLine(");");
+                        }
+                        else
+                        {
+                            indented.WriteLine(";");
+                        }
 
                         if (setMethod.Item.IsReturnable)
                         {
